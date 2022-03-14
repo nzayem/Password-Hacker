@@ -1,6 +1,17 @@
 import socket
 import argparse
+from itertools import product
 
+
+def generate_password():
+    index = 1
+    abc = 'abcdefghijklmnopqrstuvwxyz1234567890'
+    while True:
+        yield from product(abc, repeat=index)
+        index += 1
+
+
+my_pass = generate_password()
 
 parser = argparse.ArgumentParser()
 
@@ -8,22 +19,21 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('hostname')
 parser.add_argument('port')
-parser.add_argument('message')
 
 args = parser.parse_args()
 
-with socket.socket() as client_socket:
+client_socket = socket.socket()
 
-    address = (args.hostname, int(args.port))
+address = (args.hostname, int(args.port))
 
-    client_socket.connect(address)
+client_socket.connect(address)
 
-    data = args.message
-    data = data.encode()
+while True:
+    guess = (''.join(next(my_pass))).encode()
+    client_socket.send(guess)
+    response = (client_socket.recv(1024)).decode()
+    if response == "Connection success!":
+        print(guess.decode())
+        break
 
-    client_socket.send(data)
-
-    response = client_socket.recv(1024)
-
-    response = response.decode()
-    print(response)
+client_socket.close()
